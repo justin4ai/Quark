@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-
+from torch.nn import Sequential
 class RayEncoder(torch.nn.Module):
     def __init__(self, encoding_dim = 16):
 
@@ -26,7 +26,13 @@ class RayEncoder(torch.nn.Module):
         encoding = torch.cat([sin_encoding, cos_encoding], dim = -1)  
         return encoding.view(encoding.shape[0], -1) 
 
-class UpdateBlock():
+class UpdateBlock(torch.nn.Module):
+
+    def __init__(self, ):
+        super(UpdateBlock, self).__init__()
+
+        self.ups = torch.ModuleList([torch.nn.Upsample(scale_factor = 2, mode = 'nearest') for i in range(4) ])
+        self.blocks = torch.ModuleList([ (CGCBlock(), CGCBlock()) for i in range(4)])
     
     def concat_features(self, rendered_features, input_images, ray_directions):
         """
@@ -43,3 +49,26 @@ class UpdateBlock():
         ray_features = torch.cat([input_images, ray_directions], dim = -1) 
         combined = torch.cat([rendered_features, ray_features], dim =-1) 
         return combined.permute(0, 4, 1, 2, 3).contiguous()
+    
+    def forward(self, i_k, k):
+        block = self.select_block()
+
+    def select_block(self, k):
+        return self.blocks[k]
+
+
+class CGCBlock(torch.nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(CGCBlock, self).__init__()
+
+        self.conv1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size = 3, padding = 1) 
+        self.activation = torch.nn.GELU()  
+        self.conv2 = torch.nn.Conv2d(in_channels, out_channels, kernel_size = 3, padding = 1) 
+ 
+    def forward(self, x):
+
+        x = self.conv1(x)      
+        x = self.activation(x)  
+        x = self.conv2(x) 
+        return x
+    

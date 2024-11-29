@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from update import UpdateBlock
 
-class MultiScaleLDMRefinement(nn.Module):
+class UpdateAndFuse(nn.Module):
     def __init__(self, feature_dim, num_layers, num_iterations):
         super().__init__()
         self.num_layers = num_layers
